@@ -12,24 +12,24 @@ app.use(express.json());
 app.use(cors());
 
 // ✅ Connect to MongoDB only once
-let isConnected = false;
-const connectDB = async () => {
-  if (isConnected) {
-    console.log("⚡ Using existing MongoDB connection");
-    return;
-  }
+// let isConnected = false;
+// const connectDB = async () => {
+//   if (isConnected) {
+//     console.log("⚡ Using existing MongoDB connection");
+//     return;
+//   }
 
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log("✅ MongoDB connected successfully");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
-  }
-};
+//   try {
+//     const conn = await mongoose.connect(process.env.MONGODB_URI);
+//     isConnected = true;
+//     console.log("✅ MongoDB connected successfully");
+//   } catch (err) {
+//     console.error("❌ MongoDB connection error:", err);
+//   }
+// };
 
 // ✅ Ensure DB is connected before handling requests
-await connectDB();
+// await connectDB();
 
 // ✅ Root test route
 app.get("/", (req, res) => {
