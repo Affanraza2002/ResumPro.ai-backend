@@ -11,48 +11,59 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ✅ MongoDB connection — only connect once
+// ✅ MongoDB connection — connect only once per cold start
 let isConnected = false;
+
 const connectDB = async () => {
   if (isConnected) {
-    console.log("⚡ Using existing MongoDB connection");
+    // Reuse existing connection
     return;
   }
 
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // ⏳ Avoid long waits
+      serverSelectionTimeoutMS: 5000, // Prevent long wait
+      maxPoolSize: 1, // Keep connections light for serverless
     });
-    isConnected = true;
+
+    isConnected = conn.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    throw new Error("Database connection failed");
+    throw err;
   }
 };
 
-// ✅ Middleware to ensure DB connection before handling requests
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
-
 // ✅ Test route
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "✅ Server is live in production!",
-    environment: process.env.NODE_ENV,
-  });
+app.get("/", async (req, res) => {
+  try {
+    await connectDB(); // ensure connection once
+    res.status(200).json({
+      success: true,
+      message: "✅ Server is live in production!",
+      environment: process.env.NODE_ENV,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "❌ Database connection failed",
+      error: error.message,
+    });
+  }
 });
 
 // ✅ Export for Vercel (serverless)
-export default serverless(app);
+const handler = serverless(app);
+export default async function (req, res) {
+  await connectDB();
+  return handler(req, res);
+}
 
-// ✅ For local dev
+// ✅ For local development
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () =>
-    console.log(`🚀 Local server running on port ${PORT}`)
-  );
+  app.listen(PORT, async () => {
+    await connectDB();
+    console.log(`🚀 Local server running on port ${PORT}`);
+  });
 }
