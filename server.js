@@ -1,33 +1,31 @@
-import express from 'express';
-import cors from 'cors';
-import "dotenv/config";
-import connectDB from './configs/db.js ';
-import userRouter from './routes/userRoutes.js';
-import resumeRouter from './routes/resumeRoutes.js';
-import aiRoutes from './routes/aiRoutes.js';
+import express from "express";
+import cors from "cors";
+import "dotenv/config.js";
+import connectDB from "./configs/db.js";
+import userRouter from "./routes/userRoutes.js";
+import resumeRouter from "./routes/resumeRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
+import serverless from "serverless-http";
 
-// const app = express();
-// const PORT = process.env.PORT || 3000;
+// Create Express app
+const app = express();
 
-
-//Database connection
-await connectDB();
-
-
+// Middlewares
 app.use(express.json());
 app.use(cors());
 
-// app.get('/',(req,res)=>{
-// res.send("Server is live...");})
+// Connect Database
+await connectDB();
 
-app.use('/api/users',userRouter)
-app.use('/api/resumes',resumeRouter)
-app.use('/api/ai',aiRoutes)
+// Routes
+app.use("/api/users", userRouter);
+app.use("/api/resumes", resumeRouter);
+app.use("/api/ai", aiRoutes);
 
-
-// app.listen(PORT,()=>{
-//     console.log(`Server is running on port ${PORT}`); 
-// })
-export default function handler(req, res) {
+// Default route
+app.get("/", (req, res) => {
   res.status(200).json({ message: "Server is live!" });
-}
+});
+
+// Export as serverless function for Vercel
+export const handler = serverless(app);
