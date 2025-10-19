@@ -14,19 +14,18 @@ const app = express();
 app.use(express.json());
 
 // ✅ Allow your frontend domain
-const allowedOrigin = process.env.FRONTEND_URL || "*";
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: process.env.FRONTEND_URL || "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
 // ✅ MongoDB connection caching
-let isConnected = false;
+let cachedConnection = null;
 async function connectDB() {
-  if (isConnected) {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
     console.log("⚡ Using existing MongoDB connection");
     return;
   }
@@ -34,53 +33,58 @@ async function connectDB() {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
     });
-    isConnected = conn.connections[0].readyState === 1;
+    cachedConnection = conn;
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("❌ MongoDB connection failed:", err.message);
+    throw err;
   }
 }
 
-// ✅ Routes
+// ✅ Health check route
 app.get("/", async (req, res) => {
   try {
     await connectDB();
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "✅ Backend + MongoDB working on Vercel!",
+      message: "✅ Backend working correctly on Vercel",
       frontend: process.env.FRONTEND_URL,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "❌ Failed to connect to MongoDB",
+      message: "❌ MongoDB connection error",
       error: err.message,
     });
   }
 });
 
+// ✅ API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Create handler *outside* export
+// ✅ Wrap with serverless handler for Vercel
 const handler = serverless(app);
 
-// ✅ Correct Vercel export (return the awaited handler)
-const vercelHandler = async (req, res) => {
-  await connectDB();
-  return handler(req, res);
-};
+export default async function vercelHandler(req, res) {
+  try {
+    await connectDB();
+    return handler(req, res);
+  } catch (err) {
+    console.error("❌ Handler error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
 
-export default vercelHandler;
-
+// ✅ Required by Vercel
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// ✅ Local development
+// ✅ Local Development
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, async () => {
