@@ -13,63 +13,57 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ CORS setup
+// ✅ Allow your frontend domain
+const allowedOrigin = process.env.FRONTEND_URL || "*";
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*",
+    origin: allowedOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
-// ✅ MongoDB Connection (optimized for Vercel)
-let cachedConnection = null;
-
+// ✅ MongoDB Connection
+let isConnected = false;
 const connectDB = async () => {
-  if (cachedConnection && mongoose.connection.readyState === 1) {
+  if (isConnected) {
     console.log("⚡ Using existing MongoDB connection");
     return;
   }
 
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      maxPoolSize: 1,
       serverSelectionTimeoutMS: 5000,
     });
-    cachedConnection = conn;
+    isConnected = conn.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
-  } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
-    throw error;
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    throw err;
   }
 };
 
-// ✅ Root route for health check
+// ✅ Routes
 app.get("/", async (req, res) => {
-  try {
-    await connectDB();
-    res.status(200).json({
-      success: true,
-      message: "✅ Server + MongoDB are live on Vercel!",
-      environment: process.env.NODE_ENV,
-      frontend: process.env.FRONTEND_URL,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "❌ Database connection failed",
-      error: err.message,
-    });
-  }
+  await connectDB();
+  res.json({
+    success: true,
+    message: "✅ Backend working perfectly on Vercel!",
+    frontend: process.env.FRONTEND_URL,
+  });
 });
 
-// ✅ API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Export handler for Vercel
-const vercelHandler = serverless(app);
+// ✅ Export for Vercel
+const handler = serverless(app);
+export default async function mainHandler(req, res) {
+  await connectDB();
+  return handler(req, res);
+}
 
 export const config = {
   api: {
@@ -77,12 +71,7 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
-  await connectDB();
-  return vercelHandler(req, res);
-}
-
-// ✅ Local development
+// ✅ Local Dev Support
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, async () => {
