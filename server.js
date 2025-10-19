@@ -1,40 +1,30 @@
-import express from "express";
-import cors from "cors";
-import "dotenv/config.js";
-import connectDB from "./configs/db.js";
-import userRouter from "./routes/userRoutes.js";
-import resumeRouter from "./routes/resumeRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
-import serverless from "serverless-http";
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./configs/db.js');
+const userRouter = require('./routes/userRoutes.js');
+const resumeRouter = require('./routes/resumeRoutes.js');
+const aiRoutes = require('./routes/aiRoutes.js');
+const serverless = require('serverless-http');
+
+dotenv.config();
 
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
-// Routes
-app.use("/api/users", userRouter);
-app.use("/api/resumes", resumeRouter);
-app.use("/api/ai", aiRoutes);
+// Connect database
+connectDB();
 
-app.get("/", (req, res) => {
-  res.status(200).json({ message: "Server is live!" });
+// Routes
+app.use('/api/users', userRouter);
+app.use('/api/resumes', resumeRouter);
+app.use('/api/ai', aiRoutes);
+
+// Default route
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Server is live!' });
 });
 
-// Connect DB safely
-let isConnected = false;
-async function init() {
-  if (!isConnected) {
-    try {
-      await connectDB();
-      isConnected = true;
-      console.log("✅ MongoDB connected successfully");
-    } catch (err) {
-      console.error("❌ Database connection failed:", err);
-    }
-  }
-}
-
-await init();
-
-export const handler = serverless(app);
+// ✅ Export a single handler function for Vercel
+module.exports = serverless(app);
