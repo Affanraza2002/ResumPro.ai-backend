@@ -1,13 +1,21 @@
 import express from "express";
-import serverless from "serverless-http";
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 
+// ✅ Root test route
 app.get("/", (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
-    message: "🚀 Express is running on Vercel!",
+    message: "✅ Express server is live on Vercel!",
+    environment: process.env.NODE_ENV,
   });
 });
 
-export default serverless(app);
+// ✅ Export handler for Vercel
+export default app;
