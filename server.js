@@ -15,26 +15,26 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB connection
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Routes
+// ✅ Routes
 app.use("/api/users", userRouter);
 app.use("/api/resumes", resumeRouter);
 app.use("/api/ai", aiRoutes);
 
-// Basic health check route
+// ✅ Root test route
 app.get("/", (req, res) => {
-  res.status(200).json({ message: "✅ API is running fine!" });
+  res.status(200).json({ message: "✅ Server is live on Vercel!" });
 });
 
-// 👇 This is the key line for Vercel deployment
+// ✅ Export handler for Vercel
 export const handler = serverless(app);
 
-// 👇 This allows local development (optional)
+// ✅ For local development
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Server running locally on port ${PORT}`));
+  app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
 }
