@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ CORS
+// ✅ Allow your frontend domain
 const allowedOrigin = process.env.FRONTEND_URL || "*";
 app.use(
   cors({
@@ -23,57 +23,56 @@ app.use(
   })
 );
 
-// ✅ MongoDB connection caching for serverless
-let cachedConnection = null;
+// ✅ MongoDB connection caching
+let isConnected = false;
 async function connectDB() {
-  if (cachedConnection && mongoose.connection.readyState === 1) {
+  if (isConnected) {
     console.log("⚡ Using existing MongoDB connection");
     return;
   }
-
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      maxPoolSize: 1,
       serverSelectionTimeoutMS: 5000,
     });
-    cachedConnection = conn;
+    isConnected = conn.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("❌ MongoDB connection error:", err.message);
   }
 }
 
-// ✅ Root route (health check)
+// ✅ Routes
 app.get("/", async (req, res) => {
   try {
     await connectDB();
     res.status(200).json({
       success: true,
-      message: "✅ Backend + MongoDB are live on Vercel!",
+      message: "✅ Backend + MongoDB working on Vercel!",
       frontend: process.env.FRONTEND_URL,
-      environment: process.env.NODE_ENV,
     });
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({
       success: false,
-      message: "❌ Failed to connect MongoDB",
-      error: error.message,
+      message: "❌ Failed to connect to MongoDB",
+      error: err.message,
     });
   }
 });
 
-// ✅ API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Proper export for Vercel (important)
+// ✅ Create handler *outside* export
 const handler = serverless(app);
 
-export default async function(req, res) {
+// ✅ Correct Vercel export (return the awaited handler)
+const vercelHandler = async (req, res) => {
   await connectDB();
   return handler(req, res);
-}
+};
+
+export default vercelHandler;
 
 export const config = {
   api: {
