@@ -11,27 +11,33 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// ✅ Connect to MongoDB only once
-// let isConnected = false;
-// const connectDB = async () => {
-//   if (isConnected) {
-//     console.log("⚡ Using existing MongoDB connection");
-//     return;
-//   }
+// ✅ MongoDB connection — only connect once
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) {
+    console.log("⚡ Using existing MongoDB connection");
+    return;
+  }
 
-//   try {
-//     const conn = await mongoose.connect(process.env.MONGODB_URI);
-//     isConnected = true;
-//     console.log("✅ MongoDB connected successfully");
-//   } catch (err) {
-//     console.error("❌ MongoDB connection error:", err);
-//   }
-// };
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // ⏳ Avoid long waits
+    });
+    isConnected = true;
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    throw new Error("Database connection failed");
+  }
+};
 
-// ✅ Ensure DB is connected before handling requests
-// await connectDB();
+// ✅ Middleware to ensure DB connection before handling requests
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
-// ✅ Root test route
+// ✅ Test route
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -40,18 +46,10 @@ app.get("/", (req, res) => {
   });
 });
 
-// ✅ API routes (uncomment later when ready)
-// import userRouter from "./routes/userRoutes.js";
-// import resumeRouter from "./routes/resumeRoutes.js";
-// import aiRoutes from "./routes/aiRoutes.js";
-// app.use("/api/users", userRouter);
-// app.use("/api/resumes", resumeRouter);
-// app.use("/api/ai", aiRoutes);
+// ✅ Export for Vercel (serverless)
+export const handler = serverless(app);
 
-// ✅ Export for Vercel (Serverless)
-export default serverless(app);
-
-// ✅ For local development
+// ✅ For local dev
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () =>
