@@ -7,25 +7,34 @@ import resumeRouter from "./routes/resumeRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import serverless from "serverless-http";
 
-// Create Express app
 const app = express();
 
-// Middlewares
 app.use(express.json());
 app.use(cors());
-
-// Connect Database
-await connectDB();
 
 // Routes
 app.use("/api/users", userRouter);
 app.use("/api/resumes", resumeRouter);
 app.use("/api/ai", aiRoutes);
 
-// Default route
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Server is live!" });
 });
 
-// Export as serverless function for Vercel
+// Connect DB safely
+let isConnected = false;
+async function init() {
+  if (!isConnected) {
+    try {
+      await connectDB();
+      isConnected = true;
+      console.log("✅ MongoDB connected successfully");
+    } catch (err) {
+      console.error("❌ Database connection failed:", err);
+    }
+  }
+}
+
+await init();
+
 export const handler = serverless(app);
