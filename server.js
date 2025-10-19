@@ -7,37 +7,33 @@ import serverless from "serverless-http";
 dotenv.config();
 
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 
-// ✅ MongoDB connection — connect only once per cold start
+// ✅ MongoDB connection (optimized for serverless)
 let isConnected = false;
 
 const connectDB = async () => {
-  if (isConnected) {
-    // Reuse existing connection
-    return;
-  }
+  if (isConnected) return; // Reuse existing connection
 
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Prevent long wait
-      maxPoolSize: 1, // Keep connections light for serverless
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 1, // prevent too many open connections
     });
 
     isConnected = conn.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    throw err;
+    throw new Error("Database connection failed");
   }
 };
 
-// ✅ Test route
+// ✅ Routes
 app.get("/", async (req, res) => {
   try {
-    await connectDB(); // ensure connection once
+    await connectDB(); // ensure DB connection
     res.status(200).json({
       success: true,
       message: "✅ Server is live in production!",
@@ -54,12 +50,9 @@ app.get("/", async (req, res) => {
 
 // ✅ Export for Vercel (serverless)
 const handler = serverless(app);
-export default async function (req, res) {
-  await connectDB();
-  return handler(req, res);
-}
+export default handler;
 
-// ✅ For local development
+// ✅ Local development (runs only on localhost)
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, async () => {
