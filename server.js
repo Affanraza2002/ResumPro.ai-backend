@@ -22,7 +22,7 @@ app.use(
   })
 );
 
-// ✅ MongoDB Connection
+// ✅ MongoDB Connection (optimized for Vercel)
 let cachedConnection = null;
 
 const connectDB = async () => {
@@ -40,21 +40,24 @@ const connectDB = async () => {
     console.log("✅ MongoDB connected successfully");
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
+    throw error;
   }
 };
 
-// ✅ Root route
+// ✅ Root route for health check
 app.get("/", async (req, res) => {
   try {
     await connectDB();
     res.status(200).json({
       success: true,
-      message: "✅ Backend + MongoDB connected on Vercel",
+      message: "✅ Server + MongoDB are live on Vercel!",
+      environment: process.env.NODE_ENV,
+      frontend: process.env.FRONTEND_URL,
     });
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "❌ Failed to connect MongoDB",
+      message: "❌ Database connection failed",
       error: err.message,
     });
   }
@@ -66,7 +69,7 @@ app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
 // ✅ Export handler for Vercel
-const handler = serverless(app);
+const vercelHandler = serverless(app);
 
 export const config = {
   api: {
@@ -74,9 +77,9 @@ export const config = {
   },
 };
 
-export default async function handlerWrapper(req, res) {
+export default async function handler(req, res) {
   await connectDB();
-  return handler(req, res);
+  return vercelHandler(req, res);
 }
 
 // ✅ Local development
