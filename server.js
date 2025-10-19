@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
+import serverless from "serverless-http";
 
 import userRoutes from "./routes/userRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
@@ -12,7 +13,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ CORS setup
+// ✅ CORS setup (allow only frontend domain)
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
@@ -23,6 +24,7 @@ app.use(
 
 // ✅ MongoDB Connection (optimized for Vercel)
 let isConnected = false;
+
 const connectDB = async () => {
   if (isConnected) return;
 
@@ -31,6 +33,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000,
       maxPoolSize: 1,
     });
+
     isConnected = conn.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
@@ -39,7 +42,7 @@ const connectDB = async () => {
   }
 };
 
-// ✅ Root route
+// ✅ Root route for testing
 app.get("/", async (req, res) => {
   try {
     await connectDB();
@@ -57,13 +60,28 @@ app.get("/", async (req, res) => {
   }
 });
 
-// ✅ API Routes (these handle your app logic)
-app.use("/api/users", userRoutes);
-app.use("/api/resumes", resumeRoutes);
-app.use("/api/ai", aiRoutes);
+// ✅ API Routes (your app logic)
+app.use("/api/users", async (req, res, next) => {
+  await connectDB();
+  next();
+}, userRoutes);
 
-// ✅ Export for Vercel
-export default app;
+app.use("/api/resumes", async (req, res, next) => {
+  await connectDB();
+  next();
+}, resumeRoutes);
+
+app.use("/api/ai", async (req, res, next) => {
+  await connectDB();
+  next();
+}, aiRoutes);
+
+// ✅ Vercel Serverless Export
+const handler = serverless(app);
+export default async function (req, res) {
+  await connectDB();
+  return handler(req, res);
+}
 
 // ✅ Local Development (non-Vercel)
 if (process.env.NODE_ENV !== "production") {
