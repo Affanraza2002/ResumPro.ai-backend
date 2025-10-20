@@ -2,15 +2,14 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import serverless from "serverless-http";
+
+// Load environment variables
+dotenv.config();
 
 // Import routes
 import userRoutes from "./routes/userRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 
@@ -18,7 +17,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB Atlas
+// MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -27,21 +26,29 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
-// Base route (for testing)
+// Base route
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "Backend working ✅" });
+  res.json({ success: true, message: "Backend is live ✅" });
 });
 
-// API routes
+// API base route messages
+app.get("/api/users", (req, res) => {
+  res.send("✅ /api/users is live here");
+});
+
+app.get("/api/resumes", (req, res) => {
+  res.send("✅ /api/resumes is live here");
+});
+
+app.get("/api/ai", (req, res) => {
+  res.send("✅ /api/ai is live here");
+});
+
+// Actual API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// Export for Vercel (Serverless Function)
-export const handler = serverless(app);
-
-// For local testing (npm start)
+// Start server
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-}
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
