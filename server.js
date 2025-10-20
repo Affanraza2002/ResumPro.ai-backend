@@ -5,9 +5,9 @@ import dotenv from "dotenv";
 import serverless from "serverless-http";
 
 // Import routes
-import userRoutes from "../routes/userRoutes.js";
-import resumeRoutes from "../routes/resumeRoutes.js";
-import aiRoutes from "../routes/aiRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import resumeRoutes from "./routes/resumeRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 // Load environment variables
 dotenv.config();
