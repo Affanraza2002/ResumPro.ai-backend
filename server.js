@@ -50,6 +50,11 @@ app.get("/", async (req, res) => {
   });
 });
 
+app.get("/api", (req, res) => {
+  res.json({ message: "✅ API root active — try /api/users/register next" });
+});
+
+
 // ✅ API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
