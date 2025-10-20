@@ -22,7 +22,7 @@ app.use(
   })
 );
 
-// ✅ MongoDB Connection
+// ✅ MongoDB Connection (initialize once at cold start)
 let isConnected = false;
 async function connectDB() {
   if (isConnected) return;
@@ -35,25 +35,16 @@ async function connectDB() {
     throw error;
   }
 }
+await connectDB(); // ✅ connect once at startup (works fine on Vercel)
 
 // ✅ Health check
-app.get("/", async (req, res) => {
-  try {
-    await connectDB();
-    res.json({ success: true, message: "Backend root OK ✅" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "Backend root OK ✅" });
 });
 
 // ✅ API Test
-app.get("/api", async (req, res) => {
-  try {
-    await connectDB();
-    res.json({ success: true, message: "API route working ✅" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+app.get("/api", (req, res) => {
+  res.json({ success: true, message: "API route working ✅" });
 });
 
 // ✅ Routes
@@ -61,29 +52,15 @@ app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Export handler for Vercel
-const handler = serverless(app);
-
+// ✅ Export for Vercel
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// ✅ Main serverless handler for Vercel
-const mainHandler = async (req, res) => {
-  try {
-    await connectDB();
-    console.log("⚙️ Handling request:", req.url);
-    await handler(req, res); // ✅ FIXED: Added await here
-    console.log("✅ Request handled successfully");
-  } catch (err) {
-    console.error("❌ Server crashed:", err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-export default mainHandler;
+const handler = serverless(app);
+export default handler;
 
 // ✅ Local Development
 if (process.env.NODE_ENV !== "production") {
