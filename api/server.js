@@ -1,54 +1,47 @@
-// api/server.js
-
 import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
 import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
 import serverless from "serverless-http";
 
+// Import routes
 import userRoutes from "../routes/userRoutes.js";
 import resumeRoutes from "../routes/resumeRoutes.js";
 import aiRoutes from "../routes/aiRoutes.js";
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// ✅ CORS
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+// Connect to MongoDB Atlas
+mongoose
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
-);
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
-// ✅ MongoDB Connection (connect once)
-let isConnected = false;
-async function connectDB() {
-  if (isConnected) return;
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    isConnected = true;
-    console.log("✅ MongoDB connected successfully");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-  }
-}
-connectDB();
+// Base route (for testing)
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "Backend working ✅" });
+});
 
-// ✅ Routes
-app.get("/", (req, res) => res.json({ success: true, message: "Backend root OK ✅" }));
+// API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Export handler for Vercel
+// Export for Vercel (Serverless Function)
 export const handler = serverless(app);
 
-// ✅ Local Development
+// For local testing (npm start)
+const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
