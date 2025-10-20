@@ -12,9 +12,18 @@ import resumeRoutes from "./routes/resumeRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
-
+const allowedOrigin = process.env.FRONTEND_URL || "*";
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser tools (curl, Postman) when origin is undefined
+    if (!origin) return callback(null, true);
+    if (allowedOrigin === "*" || origin === allowedOrigin) return callback(null, true);
+    return callback(new Error("CORS not allowed by server"), false);
+  },
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  credentials: true
+}));
 app.use(express.json());
 
 // MongoDB connection
