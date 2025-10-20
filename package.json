@@ -1,13 +1,10 @@
 {
-  "name": "backend",
+  "name": "resumpro_ai-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
   "type": "module",
+  "main": "api/server.js",
   "scripts": {
-    "start": "node server.js",
-    "server": "nodemon server.js"
-  
+    "start": "node api/server.js"
   },
   "keywords": [],
   "author": "",
