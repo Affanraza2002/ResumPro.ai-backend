@@ -6,7 +6,9 @@ import protect from '../middlewares/authMiddlewares.js';
 
 const userRouter = express.Router();
 
-userRouter.post('/register',registerUser)
+router.post("/register", async (req, res) => {
+  res.json({ success: true, message: "User registered route works ✅" });
+});
 userRouter.post('/login',loginUser)
 userRouter.get('/data',protect, getUserById)
 userRouter.get('/resumes',protect ,getUserResumes);
