@@ -70,7 +70,8 @@ export const config = {
   },
 };
 
-export default async function mainHandler(req, res) {
+// ✅ Main serverless export (used by Vercel)
+const mainHandler = async (req, res) => {
   try {
     await connectDB();
     return handler(req, res);
@@ -78,9 +79,11 @@ export default async function mainHandler(req, res) {
     console.error("❌ Server crashed:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
-}
+};
 
-// ✅ Local Development
+export default mainHandler;
+
+// ✅ Local Development (only runs when not in production)
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, async () => {
@@ -88,3 +91,4 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`🚀 Server running locally on port ${PORT}`);
   });
 }
+
