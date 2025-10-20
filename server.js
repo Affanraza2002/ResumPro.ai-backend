@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ CORS
+// ✅ CORS Setup
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
@@ -22,38 +22,46 @@ app.use(
   })
 );
 
-// ✅ MongoDB connection
+// ✅ MongoDB Connection
 let isConnected = false;
-
 async function connectDB() {
   if (isConnected) return;
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     isConnected = true;
-    console.log("✅ MongoDB connected");
-  } catch (err) {
-    console.error("❌ MongoDB error:", err.message);
+    console.log("✅ MongoDB connected successfully");
+  } catch (error) {
+    console.error("❌ MongoDB connection failed:", error.message);
+    throw error;
   }
 }
 
-// ✅ Test route
+// ✅ Health check
 app.get("/", async (req, res) => {
-  await connectDB();
-  res.json({ success: true, message: "Backend root OK ✅" });
+  try {
+    await connectDB();
+    res.json({ success: true, message: "Backend root OK ✅" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-// ✅ API root test route
+// ✅ API Test
 app.get("/api", async (req, res) => {
-  await connectDB();
-  res.json({ success: true, message: "API route active ✅" });
+  try {
+    await connectDB();
+    res.json({ success: true, message: "API route working ✅" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-// ✅ Actual API routes
+// ✅ Routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ For Vercel
+// ✅ Export handler for Vercel
 const handler = serverless(app);
 
 export const config = {
@@ -63,11 +71,16 @@ export const config = {
 };
 
 export default async function mainHandler(req, res) {
-  await connectDB();
-  return handler(req, res);
+  try {
+    await connectDB();
+    return handler(req, res);
+  } catch (err) {
+    console.error("❌ Server crashed:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
 }
 
-// ✅ Local dev mode
+// ✅ Local Development
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, async () => {
