@@ -13,22 +13,44 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Connect MongoDB only once
-await connectDB();
+// ✅ Use async DB connect inside a function, no top-level await
+(async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("❌ Database connection failed:", err.message);
+  }
+})();
 
 // ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ CORS setup for production + local dev
+// ✅ CORS setup
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "https://resumpro-ai-frontend.vercel.app",
+  "http://localhost:3000",
+];
+
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL, "http://localhost:3000"],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("❌ CORS blocked for:", origin);
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
-// ✅ Health route
+app.options("*", cors());
+
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.status(200).json({ success: true, message: "ResumePro AI backend is live ✅" });
 });
@@ -38,11 +60,11 @@ app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Global error handler (no crashes on Vercel)
+// ✅ Global error handler
 app.use((err, req, res, next) => {
   console.error("🔥 Global Error:", err.message || err);
   res.status(500).json({ success: false, message: "Internal Server Error" });
 });
 
-// ✅ Export for Vercel serverless runtime
+// ✅ Export only app (not serverless wrapper)
 export default app;
