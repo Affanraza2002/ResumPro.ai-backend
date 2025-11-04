@@ -4,13 +4,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import serverless from "serverless-http";
 
-// Load environment variables
+// ✅ Load .env variables
 dotenv.config();
 
-// Import routes
-import userRoutes from "../backend/routes/userRoutes.js";
-import resumeRoutes from "../backend/routes/resumeRoutes.js";
-import aiRoutes from "../backend/routes/aiRoutes.js";
+// ✅ Import routes (relative to this file)
+import userRoutes from "../routes/userRoutes.js";
+import resumeRoutes from "../routes/resumeRoutes.js";
+import aiRoutes from "../routes/aiRoutes.js";
 
 const app = express();
 
@@ -26,7 +26,7 @@ app.use(
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       console.log("❌ CORS blocked for:", origin);
-      return callback(new Error("CORS not allowed"), false);
+      return callback(new Error("CORS not allowed by server"), false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
@@ -36,7 +36,7 @@ app.use(
 app.options("*", cors());
 app.use(express.json());
 
-// ✅ MongoDB connection (optimized for serverless)
+// ✅ Optimized MongoDB connection for serverless
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
@@ -63,6 +63,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Export serverless handler for Vercel
+// ✅ Export for Vercel serverless functions
 export const handler = serverless(app);
 export default app;
