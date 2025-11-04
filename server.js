@@ -5,12 +5,11 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./configs/db.js");
 
-// load env
 dotenv.config();
-
 const app = express();
 
-// middleware
+console.log("🚀 Starting Express setup...");
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
@@ -18,23 +17,29 @@ app.use(cors({
   credentials: true
 }));
 
-// connect db
-connectDB();
+console.log("✅ Middleware loaded.");
 
-// test route
+// Connect MongoDB
+(async () => {
+  try {
+    console.log("⏳ Connecting to MongoDB...");
+    await connectDB();
+    console.log("✅ MongoDB connected successfully!");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+  }
+})();
+
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "ResumePro AI backend is live ✅" });
+  res.json({ success: true, message: "Backend is running ✅" });
 });
 
-// routes
 app.use("/api/users", require("./routes/userRoutes.js"));
 app.use("/api/resume", require("./routes/resumeRoutes.js"));
 app.use("/api/ai", require("./routes/aiRoutes.js"));
 
-// ✅ Export app (this is required for Vercel)
 module.exports = app;
 
-// ✅ Only listen locally (not on Vercel)
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
