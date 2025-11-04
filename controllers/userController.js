@@ -1,18 +1,20 @@
-// backend/controllers/userController.js
-import User from "../models/User.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import Resume from "../models/Resume.js";
+// controllers/userController.js
+const User = require("../models/User");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const Resume = require("../models/Resume");
 
+// ✅ Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "10d" });
 };
 
+// ✅ Register User
 // POST : /api/users/register
-export const registerUser = async (req, res) => {
+exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    // check required fields
+
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Please enter all fields" });
     }
@@ -32,7 +34,7 @@ export const registerUser = async (req, res) => {
     return res.status(201).json({
       message: "User Created Successfully",
       user: userObj,
-      token, // raw token (frontend can store as-is)
+      token,
     });
   } catch (error) {
     console.error("❌ registerUser error:", error);
@@ -40,18 +42,17 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// ✅ Login User
 // POST : /api/users/login
-export const loginUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // check user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // compare passwords correctly
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
@@ -63,7 +64,7 @@ export const loginUser = async (req, res) => {
 
     return res.status(200).json({
       message: "User Login Successfully",
-      token, // raw token string
+      token,
       user: userObj,
     });
   } catch (error) {
@@ -72,8 +73,9 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// ✅ Get User by ID
 // GET : /api/users/data
-export const getUserById = async (req, res) => {
+exports.getUserById = async (req, res) => {
   try {
     const userId = req.userId;
     if (!userId) {
@@ -92,8 +94,9 @@ export const getUserById = async (req, res) => {
   }
 };
 
+// ✅ Get All Resumes of a User
 // GET : /api/users/resumes
-export const getUserResumes = async (req, res) => {
+exports.getUserResumes = async (req, res) => {
   try {
     const userId = req.userId;
     if (!userId) {

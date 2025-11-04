@@ -1,11 +1,10 @@
-// backend/middlewares/authMiddlewares.js
-import jwt from "jsonwebtoken";
+const jwt = require("jsonwebtoken");
 
 const protect = async (req, res, next) => {
   try {
     let token = req.headers.authorization;
 
-    // If no Authorization header, try cookies (optional)
+    // Check cookies if Authorization header not present
     if (!token && req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
@@ -14,19 +13,19 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized: No token provided" });
     }
 
-    // Accept both "Bearer <token>" and raw "<token>"
+    // Handle "Bearer <token>" format
     if (typeof token === "string" && token.startsWith("Bearer ")) {
       token = token.split(" ")[1];
     }
 
-    // Final sanity check
+    // Final check
     if (!token || token === "null" || token === "undefined") {
       return res.status(401).json({ message: "Unauthorized: No token provided" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // decoded should contain what you signed (we expect { userId: ... })
     req.userId = decoded.userId || decoded.id || decoded._id;
+
     next();
   } catch (error) {
     console.error("❌ Auth Middleware Error:", error.message);
@@ -34,4 +33,4 @@ const protect = async (req, res, next) => {
   }
 };
 
-export default protect;
+module.exports = protect;

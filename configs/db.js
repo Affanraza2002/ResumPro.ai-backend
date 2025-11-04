@@ -1,5 +1,5 @@
 // configs/db.js
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 let isConnected = false;
 
@@ -21,7 +21,7 @@ const connectDB = async () => {
     const conn = await mongoose.connect(mongodbURI, {
       serverSelectionTimeoutMS: 5000,
       maxPoolSize: 5,
-      family: 4,
+      family: 4, // prefer IPv4 for serverless environments
     });
 
     isConnected = conn.connections[0].readyState === 1;
@@ -32,4 +32,4 @@ const connectDB = async () => {
   }
 };
 
-export default connectDB;
+module.exports = connectDB;

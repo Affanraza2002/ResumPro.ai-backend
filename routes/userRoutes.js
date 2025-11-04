@@ -1,11 +1,11 @@
-import express from 'express';
-import {
+const express = require("express");
+const {
   getUserById,
   getUserResumes,
   loginUser,
-  registerUser
-} from '../controllers/userController.js';
-import protect from '../middlewares/authMiddlewares.js';
+  registerUser,
+} = require("../controllers/userController");
+const protect = require("../middlewares/authMiddlewares");
 
 const userRouter = express.Router();
 
@@ -14,8 +14,8 @@ userRouter.post("/register", async (req, res) => {
   res.json({ success: true, message: "User registered route works ✅" });
 });
 
-userRouter.post('/login', loginUser);
-userRouter.get('/data', protect, getUserById);
-userRouter.get('/resumes', protect, getUserResumes);
+userRouter.post("/login", loginUser);
+userRouter.get("/data", protect, getUserById);
+userRouter.get("/resumes", protect, getUserResumes);
 
-export default userRouter;
+module.exports = userRouter;

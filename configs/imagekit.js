@@ -1,5 +1,6 @@
-import dotenv from "dotenv";
-import ImageKit from "imagekit";
+// configs/imagekit.js
+const dotenv = require("dotenv");
+const ImageKit = require("imagekit");
 
 dotenv.config();
 
@@ -9,4 +10,5 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
 });
 
-export default imagekit;
+module.exports = imagekit;
+

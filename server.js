@@ -1,19 +1,20 @@
 // backend/server.js
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import connectDB from "./configs/db.js";
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const connectDB = require("./configs/db.js");
 
-import userRoutes from "./routes/userRoutes.js";
-import resumeRoutes from "./routes/resumeRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
+const userRoutes = require("./routes/userRoutes.js");
+const resumeRoutes = require("./routes/resumeRoutes.js");
+const aiRoutes = require("./routes/aiRoutes.js");
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// ✅ Use async DB connect inside a function, no top-level await
+// ✅ Connect to MongoDB
 (async () => {
   try {
     await connectDB();
@@ -52,7 +53,10 @@ app.options("*", cors());
 
 // ✅ Health check route
 app.get("/", (req, res) => {
-  res.status(200).json({ success: true, message: "ResumePro AI backend is live ✅" });
+  res.status(200).json({
+    success: true,
+    message: "ResumePro AI backend is live ✅",
+  });
 });
 
 // ✅ API routes
@@ -66,5 +70,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: "Internal Server Error" });
 });
 
-// ✅ Export only app (not serverless wrapper)
-export default app;
+// ✅ Start server locally (not in Vercel)
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+}
+
+// ✅ Export for Vercel
+module.exports = app;

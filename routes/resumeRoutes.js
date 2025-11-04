@@ -1,16 +1,20 @@
-import express from 'express';
-import protect from '../middlewares/authMiddlewares.js';
-import { createResume, deleteResume, getPublicResumeById, getResumeById, updateResume } from '../controllers/resumeController.js';
-import upload from '../configs/multer.js';
+const express = require("express");
+const protect = require("../middlewares/authMiddlewares");
+const { 
+  createResume, 
+  deleteResume, 
+  getPublicResumeById, 
+  getResumeById, 
+  updateResume 
+} = require("../controllers/resumeController");
+const upload = require("../configs/multer");
 
-const resumeRouter = express.Router(
+const resumeRouter = express.Router();
 
-);
+resumeRouter.post("/create", protect, createResume);
+resumeRouter.put("/update", upload.single("image"), protect, updateResume);
+resumeRouter.delete("/delete/:resumeId", protect, deleteResume);
+resumeRouter.get("/get/:resumeId", protect, getResumeById);
+resumeRouter.get("/public/:resumeId", getPublicResumeById);
 
-resumeRouter.post('/create', protect,createResume);
-resumeRouter.put('/update',upload.single('image'), protect,updateResume);
-resumeRouter.delete('/delete/:resumeId', protect,deleteResume);
-resumeRouter.get('/get/:resumeId', protect,getResumeById);
-resumeRouter.get('/public/:resumeId',getPublicResumeById);
-
-export default resumeRouter;
+module.exports = resumeRouter;
