@@ -1,11 +1,11 @@
-// server.js
+// backend/server.js
 import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import serverless from "serverless-http";
+import cookieParser from "cookie-parser"; // optional, useful if you use cookies
 
-// ✅ Load environment variables
 dotenv.config();
 
 import userRoutes from "./routes/userRoutes.js";
@@ -14,30 +14,34 @@ import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
-// ✅ CORS setup
+// middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// CORS - allow your deployed frontend and localhost
 const allowedOrigins = [
-  "https://resumpro-ai-frontend.vercel.app",  // deployed frontend
-  "http://localhost:3000"     
+  process.env.FRONTEND_URL || "https://resumpro-ai-frontend.vercel.app",
+  "http://localhost:3000",
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // allow requests with no origin (like Postman or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       console.log("❌ CORS blocked for:", origin);
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+      return callback(new Error("CORS not allowed by server"));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 app.options("*", cors());
-app.use(express.json());
 
-// ✅ MongoDB connection (no deprecated options)
+// MongoDB connection (no deprecated options)
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
@@ -51,22 +55,28 @@ const connectDB = async () => {
 };
 connectDB();
 
-// ✅ Base route
+// Base route
 app.get("/", (req, res) => {
   res.json({ success: true, message: "Backend is live ✅" });
 });
 
-// ✅ API routes
+// API routes
 app.use("/api/users", userRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Local development (use npm run dev)
+// Global error handler (so serverless doesn't crash on thrown errors)
+app.use((err, req, res, next) => {
+  console.error("❌ Global Error:", err.message || err);
+  res.status(500).json({ success: false, message: "Internal Server Error" });
+});
+
+// Local dev server
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`🚀 Server running locally on port ${PORT}`));
 }
 
-// ✅ Export handler for Vercel
+// Export for Vercel
 export const handler = serverless(app);
 export default app;
