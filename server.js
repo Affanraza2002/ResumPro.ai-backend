@@ -14,16 +14,26 @@ import aiRoutes from "./routes/aiRoutes.js";
 const app = express();
 const allowedOrigin = process.env.FRONTEND_URL || "*";
 // Middleware
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:3000" // optional for local testing
+];
+
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non-browser tools (curl, Postman) when origin is undefined
-    if (!origin) return callback(null, true);
-    if (allowedOrigin === "*" || origin === allowedOrigin) return callback(null, true);
-    return callback(new Error("CORS not allowed by server"), false);
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman, curl
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ CORS blocked for origin:", origin);
+      callback(new Error("CORS not allowed by server"), false);
+    }
   },
   methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  credentials: true
+  credentials: true,
 }));
+
+app.options("*", cors()); // handle preflight
 app.use(express.json());
 
 // MongoDB connection
