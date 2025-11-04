@@ -16,24 +16,23 @@ const app = express();
 
 // ✅ CORS setup
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "https://resumpro-ai-frontend.vercel.app",
-  "http://localhost:3000"
+  "https://resumpro-ai-frontend.vercel.app",  // deployed frontend
+  "http://localhost:3000"     
 ];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ CORS blocked for:", origin);
-        callback(new Error("CORS not allowed by server"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ CORS blocked for:", origin);
+      callback(new Error("CORS not allowed"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 
 app.options("*", cors());
 app.use(express.json());
